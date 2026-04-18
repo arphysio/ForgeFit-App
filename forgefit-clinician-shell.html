@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ForgeFit — Clinician Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* ─── RESET & BASE ─────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green:       #1D9E75;
+    --green-light: #E1F5EE;
+    --green-mid:   #9FE1CB;
+    --green-dark:  #085041;
+    --amber:       #F59E0B;
+    --amber-light: #FEF3C7;
+    --red:         #EF4444;
+    --red-light:   #FEE2E2;
+    --blue:        #3B82F6;
+    --blue-light:  #EFF6FF;
+    --purple:      #8B5CF6;
+    --purple-light:#F5F3FF;
+
+    --bg:          #F8F7F4;
+    --surface:     #FFFFFF;
+    --surface-2:   #F2F1EE;
+    --border:      rgba(0,0,0,0.08);
+    --border-mid:  rgba(0,0,0,0.13);
+    --text:        #1A1917;
+    --text-2:      #6B6A66;
+    --text-3:      #A09F9B;
+
+    --nav-w:       60px;
+    --sidebar-w:   240px;
+    --detail-w:    200px;
+    --tools-w:     52px;
+
+    --radius:      10px;
+    --radius-sm:   6px;
+    --radius-full: 999px;
+
+    --font:        'DM Sans', sans-serif;
+    --mono:        'DM Mono', monospace;
+
+    --transition:  0.15s ease;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: var(--font);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── APP SHELL ─────────────────────────────────── */
+  .app {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ─── LEFT ICON NAV ──────────────────────────────── */
+  .nav {
+    width: var(--nav-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 0 12px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .nav-logo {
+    width: 34px; height: 34px;
+    background: var(--green);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; color: #fff;
+    letter-spacing: -0.03em;
+    margin-bottom: 18px;
+    flex-shrink: 0;
+  }
+
+  .nav-items { display: flex; flex-direction: column; gap: 2px; width: 100%; align-items: center; }
+  .nav-spacer { flex: 1; }
+
+  .nav-btn {
+    width: 40px; height: 40px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text-3);
+    transition: background var(--transition), color var(--transition);
+    position: relative;
+    border: none; background: transparent;
+  }
+  .nav-btn:hover { background: var(--surface-2); color: var(--text-2); }
+  .nav-btn.active { background: var(--green-light); color: var(--green-dark); }
+  .nav-btn.active::after {
+    content: '';
+    position: absolute;
+    left: -1px; top: 50%;
+    transform: translateY(-50%);
+    width: 2.5px; height: 22px;
+    background: var(--green);
+    border-radius: 0 2px 2px 0;
+  }
+
+  .nav-btn svg { width: 18px; height: 18px; stroke-width: 1.6; }
+
+  /* TOOLTIP */
+  .nav-btn::before {
+    content: attr(data-tip);
+    position: absolute;
+    left: calc(var(--nav-w) - 10px);
+    top: 50%; transform: translateY(-50%);
+    background: var(--text);
+    color: #fff;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s;
+    z-index: 100;
+  }
+  .nav-btn:hover::before { opacity: 1; }
+
+  /* ─── PATIENT SIDEBAR ─────────────────────────────── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .sidebar-head {
+    padding: 14px 14px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-label {
+    font-size: 10.5px; font-weight: 500; letter-spacing: 0.07em;
+    color: var(--text-3); text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .search {
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-family: var(--font);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    outline: none;
+    transition: border-color var(--transition);
+  }
+  .search:focus { border-color: var(--green); }
+  .search::placeholder { color: var(--text-3); }
+
+  .patient-list { overflow-y: auto; flex: 1; padding: 6px 0; }
+
+  .patient-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: background var(--transition);
+    position: relative;
+  }
+  .patient-row:hover { background: var(--surface-2); }
+  .patient-row.active { background: var(--green-light); }
+  .patient-row.active::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 2.5px; background: var(--green);
+    border-radius: 0 2px 2px 0;
+  }
+
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .av-green  { background: var(--green-mid);   color: var(--green-dark); }
+  .av-amber  { background: #FDE68A;             color: #78350F; }
+  .av-blue   { background: #BFDBFE;             color: #1E3A8A; }
+  .av-pink   { background: #FBCFE8;             color: #831843; }
+  .av-purple { background: #DDD6FE;             color: #4C1D95; }
+
+  .pt-info { min-width: 0; flex: 1; }
+  .pt-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pt-sub  { font-size: 11px; color: var(--text-2); margin-top: 1px; }
+  .flag-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+
+  /* ─── MAIN AREA ───────────────────────────────────── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* TOP BAR */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .topbar-name { font-size: 15px; font-weight: 600; }
+  .topbar-meta { font-size: 13px; color: var(--text-2); }
+  .pill {
+    font-size: 11px; font-weight: 500;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+  }
+  .pill-green  { background: var(--green-light);   color: var(--green-dark); }
+  .pill-amber  { background: var(--amber-light);   color: #78350F; }
+  .pill-red    { background: var(--red-light);     color: #991B1B; }
+  .spacer { flex: 1; }
+
+  .top-btn {
+    font-size: 12px; font-family: var(--font);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-mid);
+    background: transparent; color: var(--text);
+    cursor: pointer;
+    transition: background var(--transition);
+  }
+  .top-btn:hover { background: var(--surface-2); }
+  .top-btn.cta {
+    background: var(--green); color: #fff;
+    border-color: var(--green);
+  }
+  .top-btn.cta:hover { background: #178a64; }
+
+  /* TAB BAR */
+  .tabbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    padding: 0 20px;
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+  .tabbar::-webkit-scrollbar { display: none; }
+
+  .tab {
+    font-size: 13px; font-weight: 400;
+    padding: 11px 14px;
+    cursor: pointer;
+    color: var(--text-2);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color var(--transition), border-color var(--transition);
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); font-weight: 500; }
+
+  /* PAGE CONTENT */
+  .page {
+    flex: 1;
+    overflow-y: auto;
+    display: none;
+    padding: 20px;
+    gap: 16px;
+  }
+  .page.active { display: flex; }
+
+  /* OVERVIEW page layout */
+  .overview-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr var(--detail-w);
+    gap: 16px;
+  }
+  .col { display: flex; flex-direction: column; gap: 14px; }
+
+  /* ─── CARDS ───────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .card-title {
+    font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 14px;
+  }
+
+  /* PHASE BARS */
+  .phase-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .phase-lbl { font-size: 12px; color: var(--text-2); width: 56px; flex-shrink: 0; }
+  .bar-bg { flex: 1; height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; background: var(--green); transition: width 0.4s ease; }
+  .bar-done { background: var(--green-mid); }
+  .phase-pct { font-size: 11px; color: var(--text-3); width: 32px; text-align: right; font-family: var(--mono); }
+
+  /* VAS DOTS */
+  .vas-row { display: flex; gap: 7px; margin-bottom: 10px; }
+  .vas-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+  }
+  .vas-green  { background: var(--green-light); color: var(--green-dark); }
+  .vas-amber  { background: var(--amber-light); color: #78350F; }
+  .vas-red    { background: var(--red-light);   color: #991B1B; }
+
+  /* METRIC GRID */
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .metric-card { background: var(--surface-2); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .m-label { font-size: 10.5px; color: var(--text-3); margin-bottom: 3px; }
+  .m-val   { font-size: 22px; font-weight: 500; color: var(--text); font-family: var(--mono); }
+  .m-val.good { color: var(--green); }
+  .m-val.warn { color: var(--amber); }
+  .m-val.bad  { color: var(--red); }
+  .m-unit { font-size: 11px; color: var(--text-3); }
+
+  /* SESSION ROWS */
+  .session-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .session-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .s-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .s-info { flex: 1; }
+  .s-name { font-weight: 500; color: var(--text); }
+  .s-time { color: var(--text-2); margin-top: 1px; font-size: 11px; }
+
+  /* OUTCOMES */
+  .outcome-row { margin-bottom: 12px; }
+  .o-label { font-size: 11px; color: var(--text-2); margin-bottom: 4px; }
+  .o-val   { font-size: 18px; font-weight: 500; }
+  .o-delta { font-size: 11px; color: var(--green); margin-left: 4px; }
+
+  /* INTEGRATION ROWS */
+  .int-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .int-row:last-child { margin-bottom: 0; }
+  .int-name { font-size: 12px; font-weight: 500; }
+  .int-status { font-size: 11px; }
+  .int-ok   { color: var(--green); }
+  .int-off  { color: var(--text-3); }
+
+  /* PLACEHOLDER PAGES */
+  .placeholder {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px;
+    color: var(--text-3);
+  }
+  .placeholder svg { width: 40px; height: 40px; stroke: var(--border-mid); }
+  .placeholder-title { font-size: 15px; font-weight: 500; color: var(--text-2); }
+  .placeholder-sub { font-size: 13px; color: var(--text-3); }
+
+  /* ─── RIGHT TOOL RAIL ─────────────────────────────── */
+  .tools {
+    width: var(--tools-w);
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .tool-btn {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text-3);
+    transition: background var(--transition), color var(--transition);
+    position: relative;
+  }
+  .tool-btn:hover { background: var(--surface-2); color: var(--text); }
+  .tool-btn svg { width: 17px; height: 17px; stroke-width: 1.5; }
+  .tool-sep {
+    width: 28px; height: 1px;
+    background: var(--border);
+    margin: 6px 0;
+  }
+  .tool-btn::before {
+    content: attr(data-tip);
+    position: absolute;
+    right: calc(var(--tools-w) - 4px);
+    top: 50%; transform: translateY(-50%);
+    background: var(--text);
+    color: #fff;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s;
+    z-index: 100;
+  }
+  .tool-btn:hover::before { opacity: 1; }
+
+  /* ─── EMPTY STATE BUTTON ──────────────────────────── */
+  .emp-btn {
+    margin-top: 8px;
+    padding: 8px 18px;
+    background: var(--green); color: #fff;
+    font-size: 13px; font-family: var(--font); font-weight: 500;
+    border: none; border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  .emp-btn:hover { background: #178a64; }
+
+  /* ─── SCROLLBAR ───────────────────────────────────── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ─── LEFT ICON NAV ─────────────────────────── -->
+  <nav class="nav">
+    <div class="nav-logo">FF</div>
+    <div class="nav-items">
+      <button class="nav-btn active" data-tip="Patients" onclick="switchNav(this)">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-5-3.87M9 20H4v-2a4 4 0 015-3.87m6-4.13a4 4 0 11-8 0 4 4 0 018 0zm6-4a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </button>
+      <button class="nav-btn" data-tip="Programs" onclick="switchNav(this)">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      </button>
+      <button class="nav-btn" data-tip="Calendar" onclick="switchNav(this)">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      </button>
+      <button class="nav-btn" data-tip="Outcomes" onclick="switchNav(this)">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </button>
+      <button class="nav-btn" data-tip="Messages" onclick="switchNav(this)">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+      </button>
+    </div>
+    <div class="nav-spacer"></div>
+    <button class="nav-btn" data-tip="Settings" onclick="switchNav(this)">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    </button>
+  </nav>
+
+  <!-- ─── PATIENT SIDEBAR ───────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <div class="sidebar-label">Patients</div>
+      <input class="search" type="text" placeholder="Search patients..." oninput="filterPatients(this.value)" />
+    </div>
+    <div class="patient-list" id="patientList">
+      <div class="patient-row active" onclick="selectPatient(this)">
+        <div class="avatar av-green">SM</div>
+        <div class="pt-info">
+          <div class="pt-name">Sarah M.</div>
+          <div class="pt-sub">Tib. post — Wk 6</div>
+        </div>
+      </div>
+      <div class="patient-row" onclick="selectPatient(this)">
+        <div class="avatar av-amber">JL</div>
+        <div class="pt-info">
+          <div class="pt-name">James L.</div>
+          <div class="pt-sub">Concussion — Wk 3</div>
+        </div>
+        <div class="flag-dot"></div>
+      </div>
+      <div class="patient-row" onclick="selectPatient(this)">
+        <div class="avatar av-blue">PK</div>
+        <div class="pt-info">
+          <div class="pt-name">Priya K.</div>
+          <div class="pt-sub">Vestibular — Wk 1</div>
+        </div>
+      </div>
+      <div class="patient-row" onclick="selectPatient(this)">
+        <div class="avatar av-pink">RC</div>
+        <div class="pt-info">
+          <div class="pt-name">Ryan C.</div>
+          <div class="pt-sub">Running RTR — Wk 8</div>
+        </div>
+      </div>
+      <div class="patient-row" onclick="selectPatient(this)">
+        <div class="avatar av-purple">ML</div>
+        <div class="pt-info">
+          <div class="pt-name">Maria L.</div>
+          <div class="pt-sub">Shockwave — Wk 2</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── MAIN CONTENT ──────────────────────────── -->
+  <div class="main">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <span class="topbar-name">Sarah M.</span>
+      <span class="topbar-meta">32F · Tibialis posterior tendinopathy</span>
+      <span class="pill pill-green">Active</span>
+      <div class="spacer"></div>
+      <button class="top-btn" onclick="alert('Opens Jane App chart for this patient')">Jane App ↗</button>
+      <button class="top-btn" onclick="alert('Opens Physitrack exercise library')">Physitrack ↗</button>
+      <button class="top-btn cta" onclick="alert('AI program builder — coming next!')">+ Assign program</button>
+    </div>
+
+    <!-- TAB BAR -->
+    <div class="tabbar">
+      <div class="tab active" onclick="switchTab(this, 'overview')">Overview</div>
+      <div class="tab" onclick="switchTab(this, 'program')">Program</div>
+      <div class="tab" onclick="switchTab(this, 'painlog')">Pain log</div>
+      <div class="tab" onclick="switchTab(this, 'outcomes')">Outcomes</div>
+      <div class="tab" onclick="switchTab(this, 'recovery')">Recovery</div>
+      <div class="tab" onclick="switchTab(this, 'messages')">Messages</div>
+    </div>
+
+    <!-- ─── OVERVIEW PAGE ─────────────────────── -->
+    <div class="page active" id="page-overview">
+      <div class="overview-grid">
+
+        <!-- LEFT COLUMN -->
+        <div class="col">
+
+          <!-- Program progress -->
+          <div class="card">
+            <div class="card-title">Return-to-run program · Phase 2 of 3</div>
+            <div class="phase-row">
+              <div class="phase-lbl">Phase 1</div>
+              <div class="bar-bg"><div class="bar-fill bar-done" style="width:100%"></div></div>
+              <div class="phase-pct">Done</div>
+            </div>
+            <div class="phase-row">
+              <div class="phase-lbl">Phase 2</div>
+              <div class="bar-bg"><div class="bar-fill" style="width:60%"></div></div>
+              <div class="phase-pct">60%</div>
+            </div>
+            <div class="phase-row" style="margin-bottom:0">
+              <div class="phase-lbl">Phase 3</div>
+              <div class="bar-bg"><div class="bar-fill" style="width:0%"></div></div>
+              <div class="phase-pct">—</div>
+            </div>
+            <div style="margin-top:12px; font-size:12px; color:var(--text-2);">Week 6 of 12 · Next session: Tue Apr 22</div>
+          </div>
+
+          <!-- VAS Pain Log -->
+          <div class="card">
+            <div class="card-title">VAS pain log · Last 7 sessions</div>
+            <div class="vas-row">
+              <div class="vas-dot vas-green">2</div>
+              <div class="vas-dot vas-green">2</div>
+              <div class="vas-dot vas-amber">4</div>
+              <div class="vas-dot vas-amber">3</div>
+              <div class="vas-dot vas-green">2</div>
+              <div class="vas-dot vas-green">1</div>
+              <div class="vas-dot vas-green">1</div>
+            </div>
+            <div style="font-size:11px; color:var(--text-3);">Green ≤ 3 &nbsp;·&nbsp; Amber 4–5 &nbsp;·&nbsp; Red ≥ 6 &nbsp;·&nbsp; No pain flags triggered</div>
+          </div>
+
+          <!-- Upcoming sessions -->
+          <div class="card">
+            <div class="card-title">Upcoming sessions</div>
+            <div class="session-row">
+              <div class="s-dot" style="background:var(--green)"></div>
+              <div class="s-info">
+                <div class="s-name">Interval run — 3 × 5 min</div>
+                <div class="s-time">Tue Apr 22 · 7:00 AM</div>
+              </div>
+              <span class="pill pill-green">Run</span>
+            </div>
+            <div class="session-row">
+              <div class="s-dot" style="background:var(--blue)"></div>
+              <div class="s-info">
+                <div class="s-name">Strength — Phase 2 gym</div>
+                <div class="s-time">Thu Apr 24 · 6:30 AM</div>
+              </div>
+              <span class="pill" style="background:var(--blue-light);color:#1E40AF;">Gym</span>
+            </div>
+            <div class="session-row">
+              <div class="s-dot" style="background:var(--green)"></div>
+              <div class="s-info">
+                <div class="s-name">Interval run — 3 × 7 min</div>
+                <div class="s-time">Sat Apr 26 · 8:00 AM</div>
+              </div>
+              <span class="pill pill-green">Run</span>
+            </div>
+          </div>
+
+        </div><!-- /col left -->
+
+        <!-- RIGHT COLUMN -->
+        <div class="col">
+
+          <!-- Metrics -->
+          <div class="card">
+            <div class="card-title">Metrics</div>
+            <div class="metric-grid">
+              <div class="metric-card">
+                <div class="m-label">Adherence</div>
+                <div class="m-val good">87<span class="m-unit">%</span></div>
+              </div>
+              <div class="metric-card">
+                <div class="m-label">Avg VAS</div>
+                <div class="m-val">2.1</div>
+              </div>
+              <div class="metric-card">
+                <div class="m-label">Sessions</div>
+                <div class="m-val">14</div>
+              </div>
+              <div class="metric-card">
+                <div class="m-label">Flags</div>
+                <div class="m-val">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Outcome measures -->
+          <div class="card">
+            <div class="card-title">Outcome measures</div>
+            <div class="outcome-row">
+              <div class="o-label">KOOS — Initial (Wk 0)</div>
+              <div class="o-val">58 <span style="font-size:13px;color:var(--text-3);">/ 100</span></div>
+            </div>
+            <div class="outcome-row" style="margin-bottom:0">
+              <div class="o-label">KOOS — Wk 4 reassessment</div>
+              <div class="o-val">72 <span style="font-size:13px;color:var(--text-3);">/ 100</span><span class="o-delta">↑ +14</span></div>
+            </div>
+            <div style="margin-top:12px; font-size:11px; color:var(--text-3);">Next: Wk 8 reassessment</div>
+          </div>
+
+          <!-- Integrations -->
+          <div class="card">
+            <div class="card-title">Integrations</div>
+            <div class="int-row">
+              <div class="int-name">Garmin</div>
+              <div class="int-status int-ok">● Connected</div>
+            </div>
+            <div class="int-row">
+              <div class="int-name">Jane App</div>
+              <div class="int-status int-ok">● Synced</div>
+            </div>
+            <div class="int-row">
+              <div class="int-name">Apple Health</div>
+              <div class="int-status int-off">○ Not linked</div>
+            </div>
+            <div class="int-row">
+              <div class="int-name">Whoop</div>
+              <div class="int-status int-off">○ Not linked</div>
+            </div>
+          </div>
+
+        </div><!-- /col right -->
+      </div>
+    </div><!-- /overview page -->
+
+    <!-- ─── PLACEHOLDER PAGES ─────────────────── -->
+    <div class="page" id="page-program">
+      <div class="placeholder">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <div class="placeholder-title">Program builder</div>
+        <div class="placeholder-sub">AI-generated phase programs · exercise assignments · Physitrack content</div>
+        <button class="emp-btn" onclick="alert('AI program builder coming next!')">Build program with AI</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-painlog">
+      <div class="placeholder">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <div class="placeholder-title">Pain log</div>
+        <div class="placeholder-sub">Full VAS history · RPE tracking · pain flag timeline</div>
+        <button class="emp-btn">View full log</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-outcomes">
+      <div class="placeholder">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <div class="placeholder-title">Outcome measures</div>
+        <div class="placeholder-sub">KOOS · PSFS · DASH · reassessment scheduling</div>
+        <button class="emp-btn">Add reassessment</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-recovery">
+      <div class="placeholder">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+        <div class="placeholder-title">Recovery dashboard</div>
+        <div class="placeholder-sub">Garmin HRV · sleep · Whoop strain · readiness score</div>
+        <button class="emp-btn">Connect wearable</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-messages">
+      <div class="placeholder">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+        <div class="placeholder-title">Secure messaging</div>
+        <div class="placeholder-sub">Patient messages · pain flag alerts · session check-ins</div>
+        <button class="emp-btn">Send message</button>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- ─── RIGHT TOOL RAIL ───────────────────────── -->
+  <div class="tools">
+    <div class="tool-btn" data-tip="AI program builder" onclick="alert('AI builder — coming next!')">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+    </div>
+    <div class="tool-sep"></div>
+    <div class="tool-btn" data-tip="Clinical notes" onclick="alert('Clinical notes — coming next!')">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+    </div>
+    <div class="tool-btn" data-tip="Attach file" onclick="alert('File attachment — coming next!')">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+    </div>
+    <div class="tool-sep"></div>
+    <div class="tool-btn" data-tip="Flag patient" onclick="alert('Patient flagged!')">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+  // ── Tab switching ─────────────────────────────
+  function switchTab(el, id) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display = 'none'; });
+    el.classList.add('active');
+    const page = document.getElementById('page-' + id);
+    if (page) { page.style.display = 'flex'; page.classList.add('active'); }
+  }
+  // Init — hide non-active pages
+  document.querySelectorAll('.page').forEach(p => {
+    if (!p.classList.contains('active')) p.style.display = 'none';
+  });
+
+  // ── Nav switching ─────────────────────────────
+  function switchNav(el) {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // ── Patient selection ─────────────────────────
+  function selectPatient(el) {
+    document.querySelectorAll('.patient-row').forEach(r => r.classList.remove('active'));
+    el.classList.add('active');
+    // Reset to overview tab when switching patient
+    const overviewTab = document.querySelector('.tab');
+    switchTab(overviewTab, 'overview');
+  }
+
+  // ── Patient search/filter ─────────────────────
+  function filterPatients(val) {
+    const rows = document.querySelectorAll('.patient-row');
+    rows.forEach(row => {
+      const name = row.querySelector('.pt-name').textContent.toLowerCase();
+      const sub  = row.querySelector('.pt-sub').textContent.toLowerCase();
+      row.style.display = (name.includes(val.toLowerCase()) || sub.includes(val.toLowerCase())) ? 'flex' : 'none';
+    });
+  }
+</script>
+</body>
+</html>

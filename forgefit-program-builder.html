@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ForgeFit — Program Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green:        #1D9E75;
+  --green-light:  #E1F5EE;
+  --green-mid:    #5DCAA5;
+  --green-dark:   #085041;
+  --amber:        #F59E0B;
+  --amber-light:  #FEF3C7;
+  --blue:         #3B82F6;
+  --blue-light:   #EFF6FF;
+  --purple:       #8B5CF6;
+  --purple-light: #F5F3FF;
+  --red:          #EF4444;
+  --red-light:    #FEE2E2;
+  --coral:        #F97316;
+  --coral-light:  #FFF7ED;
+
+  --bg:       #F5F4F0;
+  --surface:  #FFFFFF;
+  --surface2: #F0EFeb;
+  --border:   rgba(0,0,0,0.07);
+  --border2:  rgba(0,0,0,0.12);
+  --text:     #1A1917;
+  --text2:    #6B6A66;
+  --text3:    #A8A7A3;
+
+  --radius:   10px;
+  --radius-sm: 6px;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+
+html, body { height: 100%; font-family: var(--font); font-size: 14px; color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; }
+
+/* ── LAYOUT ─────────────────────────────────── */
+.shell { display: flex; height: 100vh; overflow: hidden; }
+
+/* Left panel */
+.left-panel {
+  width: 320px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.panel-head {
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.panel-head-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.panel-title { font-size: 13px; font-weight: 600; color: var(--text); }
+
+/* Mode toggle */
+.mode-toggle { display: flex; gap: 0; background: var(--surface2); border-radius: var(--radius-sm); padding: 3px; }
+.mode-btn {
+  font-size: 12px; font-family: var(--font); font-weight: 500;
+  padding: 5px 12px; border-radius: 4px;
+  border: none; background: transparent; color: var(--text2);
+  cursor: pointer; transition: all 0.15s;
+}
+.mode-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+/* ── TEMPLATE LIBRARY ───────────────────────── */
+#templatePanel { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+
+.template-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
+}
+.template-card:hover { border-color: var(--green); background: var(--green-light); }
+.template-card.selected { border-color: var(--green); border-width: 1.5px; background: var(--green-light); }
+
+.tpl-type {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; margin-bottom: 5px;
+}
+.tpl-name { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+.tpl-desc { font-size: 11px; color: var(--text2); line-height: 1.5; }
+.tpl-meta { display: flex; gap: 8px; margin-top: 8px; }
+.tpl-tag {
+  font-size: 10px; font-weight: 500; padding: 2px 8px;
+  border-radius: 99px;
+}
+.tag-green  { background: var(--green-light); color: var(--green-dark); }
+.tag-blue   { background: var(--blue-light);  color: #1E40AF; }
+.tag-purple { background: var(--purple-light);color: #5B21B6; }
+.tag-amber  { background: var(--amber-light); color: #78350F; }
+.tag-coral  { background: var(--coral-light); color: #9A3412; }
+
+.use-template-btn {
+  display: none;
+  margin-top: 10px;
+  width: 100%;
+  padding: 7px;
+  background: var(--green); color: #fff;
+  border: none; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 500; font-family: var(--font);
+  cursor: pointer;
+}
+.template-card.selected .use-template-btn { display: block; }
+
+/* ── AI FORM ────────────────────────────────── */
+#aiPanel { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+.field label { display: block; font-size: 11px; font-weight: 500; color: var(--text2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+.field select, .field input, .field textarea {
+  width: 100%; font-family: var(--font); font-size: 13px; color: var(--text);
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 8px 10px;
+  outline: none; transition: border-color 0.15s;
+}
+.field select:focus, .field input:focus, .field textarea:focus { border-color: var(--green); background: #fff; }
+.field textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.generate-btn {
+  width: 100%; padding: 10px;
+  background: var(--green); color: #fff;
+  border: none; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; font-family: var(--font);
+  cursor: pointer; transition: background 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.generate-btn:hover { background: #178a64; }
+.generate-btn:disabled { background: var(--text3); cursor: not-allowed; }
+.spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+.generate-btn.loading .spinner { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RIGHT PANEL ────────────────────────────── */
+.right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.right-head {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: 50px;
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+.right-title { font-size: 14px; font-weight: 600; flex: 1; }
+.head-btn {
+  font-size: 12px; font-family: var(--font); padding: 6px 14px;
+  border-radius: var(--radius-sm); border: 1px solid var(--border2);
+  background: transparent; color: var(--text); cursor: pointer;
+  transition: background 0.15s;
+}
+.head-btn:hover { background: var(--surface2); }
+.head-btn.primary { background: var(--green); color: #fff; border-color: var(--green); }
+.head-btn.primary:hover { background: #178a64; }
+
+/* program content */
+.program-content {
+  flex: 1; overflow-y: auto;
+  padding: 20px;
+}
+
+/* ── EMPTY STATE ───────────────────────── */
+.empty-state {
+  height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; color: var(--text3); text-align: center;
+}
+.empty-icon { font-size: 40px; margin-bottom: 4px; opacity: 0.4; }
+.empty-title { font-size: 15px; font-weight: 500; color: var(--text2); }
+.empty-sub { font-size: 13px; max-width: 280px; line-height: 1.6; }
+
+/* ── PROGRAM OUTPUT ─────────────────────── */
+.program-header {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+.prog-name { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.prog-meta { font-size: 13px; color: var(--text2); margin-bottom: 12px; }
+.prog-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.prog-tag {
+  font-size: 11px; font-weight: 500; padding: 3px 10px;
+  border-radius: 99px;
+}
+
+/* Phase sections */
+.phase-section { margin-bottom: 20px; }
+.phase-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px;
+}
+.phase-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 4px 10px;
+  border-radius: 99px;
+}
+.phase-1 { background: var(--blue-light); color: #1E40AF; }
+.phase-2 { background: var(--amber-light); color: #78350F; }
+.phase-3 { background: var(--green-light); color: var(--green-dark); }
+
+.phase-title { font-size: 14px; font-weight: 600; }
+.phase-subtitle { font-size: 12px; color: var(--text2); margin-left: auto; }
+
+/* Exercise grid */
+.ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+
+/* Exercise card — Physitrack style */
+.ex-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.15s, transform 0.15s;
+  cursor: pointer;
+}
+.ex-card:hover { border-color: var(--green); transform: translateY(-1px); }
+
+.ex-thumb {
+  width: 100%; height: 120px;
+  background: var(--surface2);
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.ex-thumb-bg {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.ex-thumb svg { width: 48px; height: 48px; }
+.play-btn {
+  position: absolute;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(29,158,117,0.9);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+}
+.play-btn svg { width: 14px; height: 14px; margin-left: 2px; }
+.ex-category-dot {
+  position: absolute; top: 8px; left: 8px;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 2px 7px; border-radius: 99px;
+}
+
+.ex-body { padding: 10px 12px 12px; }
+.ex-name { font-size: 13px; font-weight: 500; margin-bottom: 5px; line-height: 1.3; }
+.ex-params { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 7px; }
+.ex-param {
+  font-size: 10.5px; font-weight: 500;
+  padding: 2px 7px; border-radius: 4px;
+  background: var(--surface2); color: var(--text2);
+  font-family: var(--mono);
+}
+.ex-cue { font-size: 11px; color: var(--text2); line-height: 1.45; }
+
+/* Pain rules card */
+.pain-rules {
+  background: #FFF7ED;
+  border: 1px solid #FED7AA;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-top: 16px;
+}
+.pain-rules-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #9A3412; margin-bottom: 8px; }
+.pain-rule { font-size: 12px; color: #7C2D12; margin-bottom: 5px; display: flex; gap: 7px; line-height: 1.5; }
+.pain-rule::before { content: '→'; color: #EA580C; flex-shrink: 0; }
+
+/* Loading skeleton */
+.skeleton { background: linear-gradient(90deg, var(--surface2) 25%, #e8e7e3 50%, var(--surface2) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+/* AI streaming text */
+.streaming-msg {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text2);
+  white-space: pre-wrap;
+}
+.cursor-blink { display: inline-block; width: 2px; height: 14px; background: var(--green); margin-left: 2px; animation: blink 0.8s infinite; vertical-align: middle; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── LEFT PANEL ─────────────────────────── -->
+  <div class="left-panel">
+    <div class="panel-head">
+      <div class="panel-head-top">
+        <div class="panel-title">Program builder</div>
+        <div class="mode-toggle">
+          <button class="mode-btn active" onclick="setMode('template')">Templates</button>
+          <button class="mode-btn" onclick="setMode('ai')">AI generate</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEMPLATE LIBRARY -->
+    <div id="templatePanel">
+
+      <div style="font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text3);padding:2px 2px 6px;">Return to run</div>
+
+      <div class="template-card" onclick="selectTemplate(this, 'rtr-post')">
+        <div class="tpl-type" style="color:var(--green);">↑ RTR</div>
+        <div class="tpl-name">Tibialis posterior — 12-week RTR</div>
+        <div class="tpl-desc">Phase-based return to run for tib post tendinopathy. Includes load management, pain rules, and progressive interval running.</div>
+        <div class="tpl-meta">
+          <span class="tpl-tag tag-green">12 weeks</span>
+          <span class="tpl-tag tag-green">3 phases</span>
+          <span class="tpl-tag tag-blue">RTR</span>
+        </div>
+        <button class="use-template-btn" onclick="loadTemplate('rtr-post')">Use this template →</button>
+      </div>
+
+      <div class="template-card" onclick="selectTemplate(this, 'rtr-generic')">
+        <div class="tpl-type" style="color:var(--green);">↑ RTR</div>
+        <div class="tpl-name">General running injury — 8-week RTR</div>
+        <div class="tpl-desc">Flexible return-to-run framework adaptable to most lower limb running injuries.</div>
+        <div class="tpl-meta">
+          <span class="tpl-tag tag-green">8 weeks</span>
+          <span class="tpl-tag tag-green">3 phases</span>
+          <span class="tpl-tag tag-blue">RTR</span>
+        </div>
+        <button class="use-template-btn" onclick="loadTemplate('rtr-generic')">Use this template →</button>
+      </div>
+
+      <div style="font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text3);padding:10px 2px 6px;">Strength & gym</div>
+
+      <div class="template-card" onclick="selectTemplate(this, 'strength-rtr')">
+        <div class="tpl-type" style="color:var(--blue);">🏋 Strength</div>
+        <div class="tpl-name">Running rehab — gym companion</div>
+        <div class="tpl-desc">Dumbbell/kettlebell/bodyweight program to run alongside an RTR protocol. 3 phases, progressive loading.</div>
+        <div class="tpl-meta">
+          <span class="tpl-tag tag-blue">12 weeks</span>
+          <span class="tpl-tag tag-blue">3 phases</span>
+          <span class="tpl-tag tag-green">Gym</span>
+        </div>
+        <button class="use-template-btn" onclick="loadTemplate('strength-rtr')">Use this template →</button>
+      </div>
+
+      <div class="template-card" onclick="selectTemplate(this, 'strength-hyp')">
+        <div class="tpl-type" style="color:var(--blue);">🏋 Strength</div>
+        <div class="tpl-name">Hypertrophy — 8-week general</div>
+        <div class="tpl-desc">Progressive 8-week hypertrophy program. Upper/lower split with accessory work.</div>
+        <div class="tpl-meta">
+          <span class="tpl-tag tag-blue">8 weeks</span>
+          <span class="tpl-tag tag-blue">2 phases</span>
+          <span class="tpl-tag tag-green">Gym</span>
+        </div>
+        <button class="use-template-btn" onclick="loadTemplate('strength-hyp')">Use this template →</button>
+      </div>
+
+      <div style="font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text3);padding:10px 2px 6px;">Vestibular</div>
+
+      <div class="template-card" onclick="selectTemplate(this, 'vestibular')">
+        <div class="tpl-type" style="color:var(--purple);">◎ Vestibular</div>
+        <div class="tpl-name">Vestibular rehab — BPPV & hypofunction</div>
+        <div class="tpl-desc">Gaze stabilization, habituation exercises, and progressive balance training. Symptom-guided progression.</div>
+        <div class="tpl-meta">
+          <span class="tpl-tag tag-purple">6 weeks</span>
+          <span class="tpl-tag tag-purple">3 phases</span>
+        </div>
+        <button class="use-template-btn" onclick="loadTemplate('vestibular')">Use this template →</button>
+      </div>
+
+      <div style="font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text3);padding:10px 2px 6px;">Concussion</div>
+
+      <div class="template-card" onclick="selectTemplate(this, 'concussion')">
+        <div class="tpl-type" style="color:var(--coral);">⊕ Concussion</div>
+        <div class="tpl-name">Concussion — graduated return to sport</div>
+        <div class="tpl-desc">Buffalo protocol-informed aerobic progression, cognitive load management, and sport-specific phases.</div>
+        <div class="tpl-meta">
+          <span class="tpl-tag tag-coral">6–8 weeks</span>
+          <span class="tpl-tag tag-coral">6 stages</span>
+        </div>
+        <button class="use-template-btn" onclick="loadTemplate('concussion')">Use this template →</button>
+      </div>
+
+    </div><!-- /templatePanel -->
+
+    <!-- AI GENERATE FORM -->
+    <div id="aiPanel" style="display:none;">
+      <div class="field">
+        <label>Program type</label>
+        <select id="progType">
+          <option value="">Select type...</option>
+          <option value="Return-to-run">Return to run</option>
+          <option value="Strength & gym">Strength & gym</option>
+          <option value="Vestibular rehab">Vestibular rehab</option>
+          <option value="Concussion rehab">Concussion rehab</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Diagnosis / condition</label>
+        <input type="text" id="diagnosis" placeholder="e.g. Tibialis posterior tendinopathy" />
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Duration</label>
+          <select id="duration">
+            <option>6 weeks</option>
+            <option>8 weeks</option>
+            <option selected>12 weeks</option>
+            <option>16 weeks</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Phases</label>
+          <select id="phases">
+            <option>2</option>
+            <option selected>3</option>
+            <option>4</option>
+            <option>6</option>
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Patient age</label>
+          <input type="number" id="patAge" placeholder="e.g. 32" />
+        </div>
+        <div class="field">
+          <label>Activity level</label>
+          <select id="actLevel">
+            <option>Sedentary</option>
+            <option>Recreational</option>
+            <option selected>Active</option>
+            <option>Athlete</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Equipment available</label>
+        <input type="text" id="equipment" placeholder="e.g. gym, dumbbells, bands" />
+      </div>
+      <div class="field">
+        <label>Clinical notes / goals</label>
+        <textarea id="notes" placeholder="e.g. Goal is return to 5km running by week 12. Previous shockwave completed. Pain currently 2/10 with prolonged standing."></textarea>
+      </div>
+      <button class="generate-btn" id="genBtn" onclick="generateProgram()">
+        <span class="spinner" id="spinner"></span>
+        <span id="genLabel">Generate program with AI</span>
+      </button>
+    </div><!-- /aiPanel -->
+
+  </div><!-- /left-panel -->
+
+  <!-- ── RIGHT PANEL ─────────────────────────── -->
+  <div class="right-panel">
+    <div class="right-head">
+      <div class="right-title" id="rightTitle">Program preview</div>
+      <button class="head-btn" onclick="clearProgram()" style="display:none" id="clearBtn">Clear</button>
+      <button class="head-btn" onclick="alert('Exports to PDF — coming soon!')" style="display:none" id="exportBtn">Export PDF</button>
+      <button class="head-btn primary" onclick="alert('Program assigned to patient!')" style="display:none" id="assignBtn">Assign to patient →</button>
+    </div>
+
+    <div class="program-content" id="programContent">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">No program yet</div>
+        <div class="empty-sub">Pick a template from the library or use AI generate to build a custom program for your patient.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<script>
+// ── Mode toggle ──────────────────────────────────
+function setMode(mode) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('templatePanel').style.display = mode === 'template' ? 'flex' : 'none';
+  document.getElementById('aiPanel').style.display = mode === 'ai' ? 'flex' : 'none';
+}
+
+// ── Template selection ───────────────────────────
+function selectTemplate(el, id) {
+  document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ── Template data ────────────────────────────────
+const templates = {
+  'rtr-post': {
+    name: 'Tibialis posterior — 12-week RTR',
+    patient: 'Sarah M. · 32F',
+    tags: [{label:'12 weeks',cls:'tag-green'},{label:'Return to run',cls:'tag-blue'},{label:'3 phases',cls:'tag-green'}],
+    phases: [
+      {
+        num:1, label:'Phase 1', title:'Load reduction & tissue prep', subtitle:'Weeks 1–4',
+        exercises: [
+          {name:'Single-leg calf raise', sets:'3', reps:'15', rest:'60s', cue:'Slow eccentric — 3 seconds down. Pain ≤ 3/10 throughout.', category:'Strength', icon:'calf'},
+          {name:'Tibialis posterior isometric', sets:'3', reps:'10 × 10s hold', rest:'30s', cue:'Press foot into resistance. No pain.', category:'Activation', icon:'foot'},
+          {name:'Hip abductor strengthening', sets:'3', reps:'15', rest:'45s', cue:'Maintain level pelvis. Control the lowering phase.', category:'Strength', icon:'hip'},
+          {name:'Single-leg balance', sets:'3', reps:'30s', rest:'30s', cue:'Eyes open on stable surface. Progress to eyes closed.', category:'Balance', icon:'balance'},
+        ]
+      },
+      {
+        num:2, label:'Phase 2', title:'Progressive loading & interval run intro', subtitle:'Weeks 5–8',
+        exercises: [
+          {name:'Single-leg calf raise — weighted', sets:'4', reps:'12', rest:'90s', cue:'Add load via backpack or dumbbell. Pain ≤ 3/10.', category:'Strength', icon:'calf'},
+          {name:'Interval running — walk/run', sets:'1', reps:'3 × 5 min', rest:'2 min walk', cue:'Flat surface. RPE 4–5/10. Stop if pain > 3/10.', category:'Running', icon:'run'},
+          {name:'Lateral step-down', sets:'3', reps:'10 each', rest:'60s', cue:'Slow controlled descent. Knee tracks over 2nd toe.', category:'Strength', icon:'squat'},
+          {name:'Foot intrinsic strengthening', sets:'3', reps:'20', rest:'30s', cue:'Towel scrunches or short foot exercise.', category:'Activation', icon:'foot'},
+        ]
+      },
+      {
+        num:3, label:'Phase 3', title:'Return to continuous run & sport', subtitle:'Weeks 9–12',
+        exercises: [
+          {name:'Continuous run — progressive', sets:'1', reps:'20–40 min', rest:'N/A', cue:'Build by 10% per week. RPE 5–6/10. No limp.', category:'Running', icon:'run'},
+          {name:'Plyometric calf — double to single', sets:'3', reps:'10', rest:'90s', cue:'Land softly. No pain on takeoff or landing.', category:'Power', icon:'jump'},
+          {name:'Running-specific strength circuit', sets:'3', reps:'12 each', rest:'60s', cue:'Single-leg squat, Nordic curl, hip thrust. Full control.', category:'Strength', icon:'squat'},
+          {name:'Sport-specific agility', sets:'3', reps:'5 × 20m', rest:'60s', cue:'Change of direction drills. Symptom-free throughout.', category:'Agility', icon:'run'},
+        ]
+      }
+    ],
+    painRules: [
+      'Stop exercise if pain exceeds 3/10 during activity',
+      'If pain > 4/10 the morning after — reduce load by 30% next session',
+      'No pain during warm-up walking before running sessions',
+      'Flag to clinician if 2 consecutive sessions trigger pain > 3/10'
+    ]
+  }
+};
+
+function loadTemplate(id) {
+  const tpl = templates[id];
+  if (!tpl) {
+    generateFromTemplateStub(id);
+    return;
+  }
+  renderProgram(tpl);
+}
+
+function generateFromTemplateStub(id) {
+  const names = {
+    'rtr-generic': 'General running injury — 8-week RTR',
+    'strength-rtr': 'Running rehab — gym companion',
+    'strength-hyp': 'Hypertrophy — 8-week general',
+    'vestibular': 'Vestibular rehab — BPPV & hypofunction',
+    'concussion': 'Concussion — graduated return to sport'
+  };
+  showAIGenerating(names[id] || id);
+  setTimeout(() => {
+    callClaudeAPI(`You are a physiotherapist clinical AI for ForgeFit, a rehabilitation platform. Generate a structured exercise program for: "${names[id]}". 
+
+Return ONLY a JSON object with this exact structure (no markdown, no explanation):
+{
+  "name": "program name",
+  "patient": "Template program",
+  "tags": [{"label": "X weeks", "cls": "tag-green"}, {"label": "type", "cls": "tag-blue"}],
+  "phases": [
+    {
+      "num": 1,
+      "label": "Phase 1",
+      "title": "phase title",
+      "subtitle": "Weeks X–Y",
+      "exercises": [
+        {
+          "name": "exercise name",
+          "sets": "3",
+          "reps": "10",
+          "rest": "60s",
+          "cue": "clinical cue for patient",
+          "category": "Strength",
+          "icon": "squat"
+        }
+      ]
+    }
+  ],
+  "painRules": ["rule 1", "rule 2", "rule 3"]
+}
+
+Icons available: squat, calf, run, jump, balance, hip, foot, upper, core
+Include 3-4 exercises per phase, 3 phases, evidence-based progressions.`
+    , (data) => {
+      try {
+        const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+        const clean = text.replace(/```json|```/g, '').trim();
+        const prog = JSON.parse(clean);
+        renderProgram(prog);
+      } catch(e) {
+        showError('Could not parse AI response. Please try again.');
+      }
+    });
+  }, 100);
+}
+
+// ── AI Generate ──────────────────────────────────
+async function generateProgram() {
+  const type = document.getElementById('progType').value;
+  const diagnosis = document.getElementById('diagnosis').value;
+  if (!type || !diagnosis) { alert('Please select a program type and enter a diagnosis.'); return; }
+
+  const duration = document.getElementById('duration').value;
+  const phases = document.getElementById('phases').value;
+  const age = document.getElementById('patAge').value;
+  const level = document.getElementById('actLevel').value;
+  const equipment = document.getElementById('equipment').value;
+  const notes = document.getElementById('notes').value;
+
+  const prompt = `You are a physiotherapist clinical AI for ForgeFit. Generate a structured rehabilitation program.
+
+Program type: ${type}
+Diagnosis: ${diagnosis}
+Duration: ${duration}
+Phases: ${phases}
+Patient age: ${age || 'not specified'}
+Activity level: ${level}
+Equipment: ${equipment || 'standard gym'}
+Clinical notes: ${notes || 'none'}
+
+Return ONLY a JSON object (no markdown, no explanation):
+{
+  "name": "program name",
+  "patient": "AI-generated program",
+  "tags": [{"label": "${duration}", "cls": "tag-green"}, {"label": "${type}", "cls": "tag-blue"}, {"label": "${phases} phases", "cls": "tag-green"}],
+  "phases": [
+    {
+      "num": 1,
+      "label": "Phase 1",
+      "title": "phase title",
+      "subtitle": "Weeks X–Y",
+      "exercises": [
+        {
+          "name": "exercise name",
+          "sets": "3",
+          "reps": "10",
+          "rest": "60s",
+          "cue": "specific clinical cue",
+          "category": "Strength",
+          "icon": "squat"
+        }
+      ]
+    }
+  ],
+  "painRules": ["rule 1", "rule 2", "rule 3", "rule 4"]
+}
+
+Icons: squat, calf, run, jump, balance, hip, foot, upper, core
+Include 4 exercises per phase, evidence-based, specific to the diagnosis.`;
+
+  showAIGenerating(diagnosis);
+  const btn = document.getElementById('genBtn');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  document.getElementById('genLabel').textContent = 'Generating...';
+  document.getElementById('spinner').style.display = 'block';
+
+  callClaudeAPI(prompt, (data) => {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    document.getElementById('genLabel').textContent = 'Generate program with AI';
+    document.getElementById('spinner').style.display = 'none';
+    try {
+      const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+      const clean = text.replace(/```json|```/g, '').trim();
+      const prog = JSON.parse(clean);
+      renderProgram(prog);
+    } catch(e) {
+      showError('Could not parse AI response. Please try again.');
+    }
+  });
+}
+
+// ── Claude API call ──────────────────────────────
+async function callClaudeAPI(prompt, callback) {
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    callback(data);
+  } catch(e) {
+    showError('Network error. Please try again.');
+  }
+}
+
+// ── Show generating state ────────────────────────
+function showAIGenerating(name) {
+  document.getElementById('rightTitle').textContent = 'Generating program…';
+  document.getElementById('clearBtn').style.display = 'none';
+  document.getElementById('exportBtn').style.display = 'none';
+  document.getElementById('assignBtn').style.display = 'none';
+  document.getElementById('programContent').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="streaming-msg">
+        <div style="font-size:12px;color:var(--green);font-weight:600;margin-bottom:10px;">⟳ AI is building your program for "${name}"…</div>
+        <div style="color:var(--text3);font-size:12px;">Reviewing diagnosis · Selecting evidence-based exercises · Building phase progressions · Adding pain rules</div>
+        <span class="cursor-blink"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+        ${[1,2,3].map(() => `<div style="height:160px;" class="skeleton"></div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+        ${[1,2,3].map(() => `<div style="height:160px;" class="skeleton"></div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function showError(msg) {
+  document.getElementById('programContent').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Error</div><div class="empty-sub">${msg}</div></div>`;
+}
+
+// ── Icon SVGs ────────────────────────────────────
+const icons = {
+  squat: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><circle cx="24" cy="8" r="5"/><path d="M24 13v14l-8 10M24 27l8 10M16 19h16"/></svg>`,
+  calf:  `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><circle cx="24" cy="8" r="5"/><path d="M24 13v10l-4 6v11M24 23l4 6v11"/></svg>`,
+  run:   `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><circle cx="28" cy="8" r="5"/><path d="M28 13l-4 10-8 4M24 23l2 12-4 9M26 35l8 5"/></svg>`,
+  jump:  `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><circle cx="24" cy="10" r="5"/><path d="M20 15l-6 10 10-4 6 10"/><path d="M24 15v8"/></svg>`,
+  balance:`<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><circle cx="24" cy="8" r="5"/><path d="M24 13v14M16 20h16M24 27v13"/><ellipse cx="24" cy="42" rx="10" ry="3"/></svg>`,
+  hip:   `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><circle cx="24" cy="8" r="5"/><path d="M24 13v8l-10 6M24 21l10 6M14 19l-4 15M34 19l4 15"/></svg>`,
+  foot:  `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 38c0-14 5-28 14-28s14 14 14 28"/><path d="M16 34h16M18 30h12"/></svg>`,
+  upper: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><circle cx="24" cy="8" r="5"/><path d="M24 13v10M16 14l-8 8 6 2M32 14l8 8-6 2M16 23h16M20 23v15M28 23v15"/></svg>`,
+  core:  `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><circle cx="24" cy="8" r="5"/><path d="M16 13h16v20H16z" rx="2"/><path d="M24 13v20M16 21h16M16 29h16"/></svg>`,
+};
+
+const catColors = {
+  Strength:   {bg:'#EFF6FF', color:'#1E40AF'},
+  Activation: {bg:'#F0FDF4', color:'#166534'},
+  Balance:    {bg:'#F5F3FF', color:'#5B21B6'},
+  Running:    {bg:var_green_light_hex(), color:'#085041'},
+  Power:      {bg:'#FFF7ED', color:'#9A3412'},
+  Agility:    {bg:'#FEF3C7', color:'#78350F'},
+  Core:       {bg:'#FDF4FF', color:'#6B21A8'},
+};
+function var_green_light_hex() { return '#E1F5EE'; }
+
+// ── Render program ───────────────────────────────
+function renderProgram(prog) {
+  document.getElementById('rightTitle').textContent = prog.name || 'Program preview';
+  document.getElementById('clearBtn').style.display = 'block';
+  document.getElementById('exportBtn').style.display = 'block';
+  document.getElementById('assignBtn').style.display = 'block';
+
+  const phaseClasses = ['phase-1','phase-2','phase-3','phase-3'];
+
+  let html = `
+    <div class="program-header">
+      <div class="prog-name">${prog.name}</div>
+      <div class="prog-meta">${prog.patient || ''}</div>
+      <div class="prog-tags">
+        ${(prog.tags||[]).map(t => `<span class="prog-tag ${t.cls}">${t.label}</span>`).join('')}
+      </div>
+    </div>`;
+
+  (prog.phases||[]).forEach((phase, i) => {
+    html += `
+      <div class="phase-section">
+        <div class="phase-header">
+          <span class="phase-badge ${phaseClasses[i]}">${phase.label}</span>
+          <span class="phase-title">${phase.title}</span>
+          <span class="phase-subtitle">${phase.subtitle}</span>
+        </div>
+        <div class="ex-grid">
+          ${(phase.exercises||[]).map(ex => renderExCard(ex)).join('')}
+        </div>
+      </div>`;
+  });
+
+  if (prog.painRules && prog.painRules.length) {
+    html += `
+      <div class="pain-rules">
+        <div class="pain-rules-title">Pain rules</div>
+        ${prog.painRules.map(r => `<div class="pain-rule">${r}</div>`).join('')}
+      </div>`;
+  }
+
+  document.getElementById('programContent').innerHTML = html;
+}
+
+function renderExCard(ex) {
+  const cat = catColors[ex.category] || catColors['Strength'];
+  const iconSvg = icons[ex.icon] || icons['squat'];
+  return `
+    <div class="ex-card">
+      <div class="ex-thumb">
+        <div class="ex-thumb-bg" style="color:${cat.color};opacity:0.2;">
+          ${iconSvg}
+        </div>
+        <div class="play-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        <span class="ex-category-dot" style="background:${cat.bg};color:${cat.color};">${ex.category}</span>
+      </div>
+      <div class="ex-body">
+        <div class="ex-name">${ex.name}</div>
+        <div class="ex-params">
+          <span class="ex-param">${ex.sets} sets</span>
+          <span class="ex-param">${ex.reps}</span>
+          <span class="ex-param">rest ${ex.rest}</span>
+        </div>
+        <div class="ex-cue">${ex.cue}</div>
+      </div>
+    </div>`;
+}
+
+function clearProgram() {
+  document.getElementById('rightTitle').textContent = 'Program preview';
+  document.getElementById('clearBtn').style.display = 'none';
+  document.getElementById('exportBtn').style.display = 'none';
+  document.getElementById('assignBtn').style.display = 'none';
+  document.getElementById('programContent').innerHTML = `
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">No program yet</div>
+      <div class="empty-sub">Pick a template from the library or use AI generate to build a custom program for your patient.</div>
+    </div>`;
+  document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+}
+
+// Load the first template by default
+window.onload = () => loadTemplate('rtr-post');
+</script>
+</body>
+</html>
